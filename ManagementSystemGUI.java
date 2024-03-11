@@ -13,6 +13,7 @@ public class ManagementSystemGUI extends JFrame {
     private boolean isStudentSystem = true;
     private DefaultTableModel tableModel;
 
+    private static String currentCSVFile = "";
     private static final String STUDENTS_CSV_FILE = "C://Temp//students.csv";
     private static final String COURSES_CSV_FILE = "C://Temp//courses.csv";
     private static final String CSV_SEPARATOR = ",";
@@ -44,7 +45,7 @@ public class ManagementSystemGUI extends JFrame {
         centerPanel.setLayout(new BorderLayout());
 
         // Create table
-        String[] studentColumnNames = {"Name", "ID", "Year", "Gender", "Course"};
+        String[] studentColumnNames = {"Name", "ID", "Year", "Gender", "Course, Enrollment Stat"};
         String[] courseColumnNames = {"Course Name", "Course Code"};
         tableModel = new DefaultTableModel(studentColumnNames, 0);
         JTable table = new JTable(tableModel);
@@ -85,6 +86,15 @@ public class ManagementSystemGUI extends JFrame {
                 } else {
                     deleteCourse();
                 }
+            }
+        });
+
+        updateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+            if(isStudentSystem)
+                {updateDataStudent();}
             }
         });
 
@@ -142,6 +152,7 @@ public class ManagementSystemGUI extends JFrame {
         }
     }
 
+    // window panel for add student
     private void addStudent() {
         // Create a new window panel for user input
         JPanel inputPanel = new JPanel(new GridLayout(5, 2));
@@ -232,8 +243,43 @@ public class ManagementSystemGUI extends JFrame {
         }
     }
 
-    private void clearData() {
-        // Clear all data in the table
+    public void updateDataStudent(){
+        /*update the data of the student 
+        first it will scan the code of the student
+        and then display the outputs in the textbox of the choosen student
+        edit what was displayed in the boxes and updates
+        */
+    }
+    
+    public void clearData(){
+        // clear data in the CSV
+        isStudentSystem = !isStudentSystem;
+    if(!isStudentSystem){
+        currentCSVFile = STUDENTS_CSV_FILE;
+        try (PrintWriter writer = new PrintWriter(new FileWriter(currentCSVFile))) 
+        {
+            // Write only the header to the file
+            if (currentCSVFile.equals(STUDENTS_CSV_FILE)) {
+                writer.println("Name,Id,Year,Gender,Course");
+            }    
+        }   catch (IOException e) {
+                    e.printStackTrace();
+                }
+    }
+    
+    else 
+        currentCSVFile = COURSES_CSV_FILE;
+        try (PrintWriter writer = new PrintWriter(new FileWriter(currentCSVFile))){
+         if (currentCSVFile.equals(COURSES_CSV_FILE)) {
+                writer.println("Course Name,Course Code");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void clear() {
+        // Clear all data in the table (only in the table not in the CSV)
         tableModel.setRowCount(0);
     }
 
@@ -241,7 +287,7 @@ public class ManagementSystemGUI extends JFrame {
         // Switch between Student and Course systems
         isStudentSystem = !isStudentSystem;
 
-        // Update column names based on the system
+        // Retain column names based on the system
         if (isStudentSystem) {
             String[] studentColumnNames = {"Name", "ID", "Year", "Gender", "Course"};
             tableModel.setColumnIdentifiers(studentColumnNames);
@@ -252,8 +298,10 @@ public class ManagementSystemGUI extends JFrame {
 
         // Load data for the switched system
         if (isStudentSystem) {
+            clear();
             loadCSVData(STUDENTS_CSV_FILE);
         } else {
+            clear();
             loadCSVData(COURSES_CSV_FILE);
         }
     }
