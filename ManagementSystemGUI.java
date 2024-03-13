@@ -45,7 +45,7 @@ public class ManagementSystemGUI extends JFrame {
         centerPanel.setLayout(new BorderLayout());
 
         // Create table
-        String[] studentColumnNames = {"Name", "ID", "Year", "Gender", "Course, Enrollment Status"};
+        String[] studentColumnNames = {"Name", "ID", "Year", "Gender", "Course", "Enrollment Status"};
         String[] courseColumnNames = {"Course Name", "Course Code"};
         tableModel = new DefaultTableModel(studentColumnNames, 0);
         JTable table = new JTable(tableModel);
