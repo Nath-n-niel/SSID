@@ -45,7 +45,7 @@ public class ManagementSystemGUI extends JFrame {
         centerPanel.setLayout(new BorderLayout());
 
         // Create table
-        String[] studentColumnNames = {"Name", "ID", "Year", "Gender", "Course, Enrollment Stat"};
+        String[] studentColumnNames = {"Name", "ID", "Year", "Gender", "Course, Enrollment Status"};
         String[] courseColumnNames = {"Course Name", "Course Code"};
         tableModel = new DefaultTableModel(studentColumnNames, 0);
         JTable table = new JTable(tableModel);
@@ -134,7 +134,7 @@ public class ManagementSystemGUI extends JFrame {
         // Load initial data based on the current system
         if (isStudentSystem) {
             loadCSVData(STUDENTS_CSV_FILE);
-        } else {
+        } else if(!isStudentSystem) {
             loadCSVData(COURSES_CSV_FILE);
         }
     }
@@ -227,30 +227,116 @@ public class ManagementSystemGUI extends JFrame {
 
     private void deleteCourse() {
         // Create a new window panel for user input
-        JTextField codeField = new JTextField();
+        JTextField courseCodeField = new JTextField();
         JPanel inputPanel = new JPanel(new GridLayout(1, 2));
         inputPanel.add(new JLabel("Enter Course Code:"));
-        inputPanel.add(codeField);
-
+        inputPanel.add(courseCodeField);
+    
         int result = JOptionPane.showConfirmDialog(null, inputPanel,
                 "Enter Course Code to Delete Course", JOptionPane.OK_CANCEL_OPTION);
-
+    
         if (result == JOptionPane.OK_OPTION) {
             // Find and remove the row with the specified Course Code
-            String codeToDelete = codeField.getText();
-            deleteRow(COURSES_CSV_FILE, codeToDelete);
-            removeTableRow(codeToDelete, 2);
+            String courseCodeToDelete = courseCodeField.getText();
+            deleteRow(COURSES_CSV_FILE, courseCodeToDelete);
+            removeTableRow(courseCodeToDelete, 1);
+        }
+    }
+    
+    
+
+    public void updateDataStudent(){
+        // Create a new window panel for user input
+    JPanel inputPanel = new JPanel(new GridLayout(1, 2));
+    JTextField idField = new JTextField();
+    inputPanel.add(new JLabel("Enter ID of the student to update:"));
+    inputPanel.add(idField);
+
+    int result = JOptionPane.showConfirmDialog(null, inputPanel,
+            "Enter Student ID to Update Information", JOptionPane.OK_CANCEL_OPTION);
+
+    if (result == JOptionPane.OK_OPTION) {
+        // Find the student with the specified ID
+        String idToUpdate = idField.getText();
+        int rowIndex = -1;
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            if (tableModel.getValueAt(i, 1).equals(idToUpdate)) {
+                rowIndex = i;
+                break;
+            }
+        }
+
+        if (rowIndex != -1) {
+            // Display the current information of the student
+            String name = (String) tableModel.getValueAt(rowIndex, 0);
+            String year = (String) tableModel.getValueAt(rowIndex, 2);
+            String gender = (String) tableModel.getValueAt(rowIndex, 3);
+            String course = (String) tableModel.getValueAt(rowIndex, 4);
+
+            // Create a new window panel for editing
+            JPanel editPanel = new JPanel(new GridLayout(5, 2));
+            JTextField nameField = new JTextField(name);
+            JTextField yearField = new JTextField(year);
+            JTextField genderField = new JTextField(gender);
+            JTextField courseField = new JTextField(course);
+
+            editPanel.add(new JLabel("Name:"));
+            editPanel.add(nameField);
+            editPanel.add(new JLabel("Year:"));
+            editPanel.add(yearField);
+            editPanel.add(new JLabel("Gender:"));
+            editPanel.add(genderField);
+            editPanel.add(new JLabel("Course:"));
+            editPanel.add(courseField);
+
+            int editResult = JOptionPane.showConfirmDialog(null, editPanel,
+                    "Edit Student Information", JOptionPane.OK_CANCEL_OPTION);
+
+            if (editResult == JOptionPane.OK_OPTION) {
+                // Update the data in the table
+                tableModel.setValueAt(nameField.getText(), rowIndex, 0);
+                tableModel.setValueAt(yearField.getText(), rowIndex, 2);
+                tableModel.setValueAt(genderField.getText(), rowIndex, 3);
+                tableModel.setValueAt(courseField.getText(), rowIndex, 4);
+
+                // Update the data in the CSV file by overwriting the existing row
+                String[] rowData = {
+                        nameField.getText(),
+                        idToUpdate, // ID remains unchanged
+                        yearField.getText(),
+                        genderField.getText(),
+                        courseField.getText()
+                };
+                updateDataInCSV(STUDENTS_CSV_FILE, rowData, rowIndex);
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Student with ID " + idToUpdate + " not found.");
+        }
+    }
+    }
+    
+    private void updateDataInCSV(String filePath, String[] data, int rowIndex) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            List<String> lines = new ArrayList<>();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lines.add(line);
+            }
+            // Update the corresponding line in the list
+            lines.set(rowIndex + 1, String.join(CSV_SEPARATOR, data));
+            // Write the updated lines back to the file
+            try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
+                for (String updatedLine : lines) {
+                    writer.println(updatedLine);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    public void updateDataStudent(){
-        /*update the data of the student 
-        first it will scan the code of the student
-        and then display the outputs in the textbox of the choosen student
-        edit what was displayed in the boxes and updates
-        */
-    }
-    
     public void clearData(){
         // clear data in the CSV
         isStudentSystem = !isStudentSystem;
@@ -260,7 +346,7 @@ public class ManagementSystemGUI extends JFrame {
         {
             // Write only the header to the file
             if (currentCSVFile.equals(STUDENTS_CSV_FILE)) {
-                writer.println("Name,Id,Year,Gender,Course");
+                writer.println("Name,Id,Year,Gender,Course,Enrollment Status");
             }    
         }   catch (IOException e) {
                     e.printStackTrace();
@@ -289,7 +375,7 @@ public class ManagementSystemGUI extends JFrame {
 
         // Retain column names based on the system
         if (isStudentSystem) {
-            String[] studentColumnNames = {"Name", "ID", "Year", "Gender", "Course"};
+            String[] studentColumnNames = {"Name", "ID", "Year", "Gender", "Course", "Enrollment Status"};
             tableModel.setColumnIdentifiers(studentColumnNames);
         } else {
             String[] courseColumnNames = {"Course Name", "Course Code"};
