@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ManagementSystemGUI extends JFrame {
     private JPanel centerPanel;
-    private JButton addButton, deleteButton, updateButton, clearButton, switchButton, exitButton;
+    private JButton addButton, deleteButton, updateButton, clearButton, switchButton, exitButton, searchButton;
     private DefaultTableModel tableModel;
     private static final String STUDENTS_CSV_FILE = "C://Temp//students.csv";
     private static final String COURSES_CSV_FILE = "C://Temp//courses.csv";
@@ -42,33 +42,7 @@ public class ManagementSystemGUI extends JFrame {
         centerPanel = new JPanel();
         centerPanel.setLayout(new BorderLayout());
 
-        // // Create switch button
-        // JButton switchButton = new JButton("Switch");
-        // switchButton.addActionListener(new ActionListener() {
-        //     @Override
-        //     public void actionPerformed(ActionEvent e) {
-        //         switchSystem();
-        //     }
-        // });
-        // //Create add Button
-        // JButton addButton = new JButton("Add");
-        // addButton.addActionListener(new ActionListener() {
-        //     @Override
-        //     public void actionPerformed(ActionEvent e) {
-        //         if (currentCSVFile.equals(STUDENTS_CSV_FILE)) {
-        //             addStudent();
-        //         } else if(currentCSVFile.equals(COURSES_CSV_FILE)) {
-        //             addCourse();
-        //         }
-        //     }
-        // });
-
-        // // Add button to west panel
-        // JPanel westPanel = new JPanel();
-        // westPanel.add(addButton);
-        // westPanel.add(switchButton);
-        // centerPanel.add(westPanel, BorderLayout.WEST);
-        // Create table
+ 
         String[] columnNames = getColumnNames();
         tableModel = new DefaultTableModel(columnNames, 0);
         JTable table = new JTable(tableModel);
@@ -85,10 +59,10 @@ public class ManagementSystemGUI extends JFrame {
         addButton = new JButton("Add");
         deleteButton = new JButton("Delete");
         updateButton = new JButton("Update");
-        clearButton = new JButton("Clear");
+        searchButton = new JButton("Search");
         switchButton = new JButton("Switch");
+        clearButton = new JButton("Clear");
         exitButton = new JButton("Exit");
-
         // Add action listeners
         addButton.addActionListener(new ActionListener() {
         @Override
@@ -144,12 +118,24 @@ public class ManagementSystemGUI extends JFrame {
             }
         });
 
+        searchButton.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        // Prompt the user to enter the student ID to search
+                    String studentId = JOptionPane.showInputDialog("Enter Student ID to Search:");
+                    if (studentId != null && !studentId.isEmpty()) {
+                        searchStudent(studentId);
+        }
+                    }
+                });
+
         // Add buttons to west panel
         westPanel.add(addButton);
         westPanel.add(deleteButton);
         westPanel.add(updateButton);
-        westPanel.add(clearButton);
+        westPanel.add(searchButton);
         westPanel.add(switchButton);
+        westPanel.add(clearButton);
         westPanel.add(exitButton);
 
         return westPanel;
@@ -199,7 +185,7 @@ public class ManagementSystemGUI extends JFrame {
                 boolean isEnrolled = isStudentEnrolled(student, courses);
                 String enrollmentStatus = isEnrolled ? "Enrolled" : "Course not Available";
                 // Add the enrollment status to the CSV string
-                // String csvStringWithEnrollment = parts[4] + "," + enrollmentStatus;
+                //String csvStringWithEnrollment = parts[4] + "," + enrollmentStatus;
                 String[] rowData = Arrays.copyOf(parts, parts.length + 1);
                 // student.add(new Student(parts[0], parts[1], parts[2], parts[3], csvStringWithEnrollment));
 
@@ -259,8 +245,8 @@ public class ManagementSystemGUI extends JFrame {
         Object[] fields = {
             "Name:", nameField,
             "ID:", idField,
-            "Year:", yearField,
-            "Gender:", genderField,
+            "Year (1-4):", yearField,
+            "Gender (Male/Female):", genderField,
             "Course:", courseField
         };
     
@@ -273,6 +259,32 @@ public class ManagementSystemGUI extends JFrame {
             String gender = genderField.getText().trim();
             String course = courseField.getText().trim();
     
+            // Validate year input
+            if (!isValidYear(year)) {
+                JOptionPane.showMessageDialog(null, "Invalid year. Please enter a value between 1 and 4.");
+                return; // Exit the method without adding the student
+            }
+    
+            // Validate gender input
+            if (!isValidGender(gender)) {
+                JOptionPane.showMessageDialog(null, "Invalid gender. Please enter 'Male' or 'Female'.");
+                return; // Exit the method without adding the student
+            }
+    
+            // Check if the entered ID already exists
+            if (checkIdExists(id)) {
+                JOptionPane.showMessageDialog(null, "ID already exists. Please enter a unique ID.");
+                return; // Exit the method without adding the student
+            }
+    
+        //    // Assign null to empty fields
+        //     name = name.isEmpty() ? "none" : name;
+        //     id = id.isEmpty() ? "none" : id;
+        //     year = year.isEmpty() ? "none" : year;
+        //     gender = gender.isEmpty() ? "none" : gender;
+        //     course = course.isEmpty() ? "none" : course;
+        //     updateEnrollmentStatus();
+            // Construct the input string
             String input = name + "," + id + "," + year + "," + gender + "," + course;
             if (!input.isEmpty()) {
                 try (PrintWriter writer = new PrintWriter(new FileWriter(STUDENTS_CSV_FILE, true))) {
@@ -284,7 +296,44 @@ public class ManagementSystemGUI extends JFrame {
                 }
             }
         }
+        
     }
+    
+    
+    // Method to validate year input
+    private boolean isValidYear(String year) {
+        try {
+            int yearValue = Integer.parseInt(year);
+            return yearValue >= 1 && yearValue <= 4;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+    
+    // Method to validate gender input
+    private boolean isValidGender(String gender) {
+        return gender.equalsIgnoreCase("Male") || gender.equalsIgnoreCase("Female");
+    }
+    
+
+// Method to check if ID already exists in the CSV file
+private boolean checkIdExists(String id) {
+    try (BufferedReader reader = new BufferedReader(new FileReader(STUDENTS_CSV_FILE))) {
+        String line;
+        reader.readLine(); // Skip header
+        while ((line = reader.readLine()) != null) {
+            String[] parts = line.split(",");
+            String existingId = parts[1].trim(); // Extract the ID from existing data
+            if (existingId.equals(id)) {
+                return true; // ID already exists
+            }
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+    return false; // ID not found
+}
+
 
     private void addCourse() {
         JTextField nameField = new JTextField();
@@ -312,6 +361,7 @@ public class ManagementSystemGUI extends JFrame {
                 }
             }
         }
+        updateEnrollmentStatus();
     }
 
     
@@ -358,6 +408,7 @@ public class ManagementSystemGUI extends JFrame {
                 }
             }
         }
+        updateEnrollmentStatus();
     }
 
     private void deleteStudent() {
@@ -599,6 +650,7 @@ public class ManagementSystemGUI extends JFrame {
                 JOptionPane.showMessageDialog(null, "Student with ID " + idToUpdate + " not found.");
             }
         }
+        updateEnrollmentStatus();
         }
         
         private void updateDataInCSV(String filePath, String[] data, int rowIndex) {
@@ -631,7 +683,7 @@ public class ManagementSystemGUI extends JFrame {
                 try (PrintWriter writer = new PrintWriter(new FileWriter(currentCSVFile))) {
                     // Write only the header to the file
                     if (currentCSVFile.equals(STUDENTS_CSV_FILE)) {
-                        writer.println("Name,Id,Year,Gender,Course");
+                        writer.println("Name,Id,Year,Gender,Course,Enrollment Status");
                         System.out.println("Student data cleared successfully.");
                     } else if (currentCSVFile.equals(COURSES_CSV_FILE)) {
                         writer.println("Course Name,Course Code");
@@ -648,12 +700,65 @@ public class ManagementSystemGUI extends JFrame {
         currentCSVFile = currentCSVFile.equals(STUDENTS_CSV_FILE) ? COURSES_CSV_FILE : STUDENTS_CSV_FILE;
         updateColumnNames(); // Update column names
         loadInitialData(); // Reload
+        
     }
+
+    //a method to search for the student ID
+private void searchStudent(String studentId) {
+    // Loop through the rows in the table
+    for (int i = 0; i < tableModel.getRowCount(); i++) {
+        String id = (String) tableModel.getValueAt(i, 1); // Assuming student ID is in the second column (index 1)
+        if (id.equals(studentId)) {
+            // Retrieve student data
+            String name = (String) tableModel.getValueAt(i, 0);
+            String year = (String) tableModel.getValueAt(i, 2);
+            String gender = (String) tableModel.getValueAt(i, 3);
+            String course = (String) tableModel.getValueAt(i, 4);
+            
+            // Display student data in a new dialog
+            StringBuilder message = new StringBuilder();
+            message.append("Name: ").append(name).append("\n");
+            message.append("ID: ").append(id).append("\n");
+            message.append("Year: ").append(year).append("\n");
+            message.append("Gender: ").append(gender).append("\n");
+            message.append("Course: ").append(course);
+            
+            JOptionPane.showMessageDialog(null, message.toString(), "Student Information", JOptionPane.INFORMATION_MESSAGE);
+            return; // Exit the method once the student data is displayed
+        }
+    }
+    // If the student ID is not found, display a message
+    JOptionPane.showMessageDialog(null, "Student ID '" + studentId + "' not found.");
+}
 
     private void updateColumnNames() {
         String[] columnNames = getColumnNames();
         tableModel.setColumnIdentifiers(columnNames);
     }
+
+    private void updateEnrollmentStatus() {
+    List<Student> students = loadStudents();
+    List<Course> courses = loadCourses();
+
+    // Update enrollment status for each student
+    for (Student student : students) {
+        boolean isEnrolled = isStudentEnrolled(student, courses);
+        String enrollmentStatus = isEnrolled ? "Enrolled" : "Not Enrolled";
+        student.setEnrollmentStatus(enrollmentStatus);
+    }
+
+    // Save updated enrollment status in the CSV file
+    try (PrintWriter writer = new PrintWriter(new FileWriter(STUDENTS_CSV_FILE))) {
+        writer.println("Name,Id,Year,Gender,Course,Enrollment Status");
+        for (Student student : students) {
+            writer.println(student.toCSVString());
+        }
+        System.out.println("Enrollment status updated and saved successfully.");
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
